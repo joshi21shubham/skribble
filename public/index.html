@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Skribble Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 10px;
+            margin: 0;
+            touch-action: manipulation;
+        }
+        #messages {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            min-height: 80px;
+            text-align: left;
+            overflow-y: auto;
+            max-height: 150px;
+        }
+        #user-list, #score-board {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            min-height: 40px;
+            text-align: left;
+        }
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .score-item:last-child {
+            border-bottom: none;
+        }
+        .hidden {
+            display: none;
+        }
+        .join-form {
+            margin: 15px auto;
+            max-width: 300px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            font-size: 16px; /* Larger for touch */
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            min-height: 44px; /* Better touch targets */
+            min-width: 80px;
+        }
+        .room-list {
+            margin: 15px auto;
+            max-width: 500px;
+            text-align: left;
+        }
+        .room-item {
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .room-item button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #canvas-container {
+            position: relative;
+            margin: 15px auto;
+            width: 100%;
+            max-width: 500px;
+            height: 300px;
+            border: 2px solid #333;
+            background-color: #ffffff;
+            display: block;
+            touch-action: none; /* Prevents browser handling of touch events */
+        }
+        #drawing-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            background-color: #ffffff;
+            display: block;
+            touch-action: none;
+        }
+        #word-display {
+            font-size: 22px;
+            font-weight: bold;
+            margin: 8px 0;
+            min-height: 32px;
+        }
+        #round-info {
+            font-size: 16px;
+            margin: 8px 0;
+            min-height: 24px;
+        }
+        .drawer-controls {
+            margin: 8px 0;
+        }
+        .color-option {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            margin: 0 5px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .color-option.selected {
+            border-color: #333;
+        }
+        .chat-input {
+            margin: 10px auto;
+            max-width: 500px;
+            display: flex;
+        }
+        .chat-input input {
+            flex-grow: 1;
+        }
+        .correct-guess {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .timer {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 8px 0;
+            padding: 5px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            display: inline-block;
+            min-width: 110px;
+        }
+        .timer-warning {
+            color: #ff0000;
+            background-color: #ffeeee;
+        }
+        .settings-panel {
+            margin: 15px auto;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            max-width: 500px;
+        }
+        .setting-group {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .setting-group label {
+            margin-right: 8px;
+            font-weight: bold;
+        }
+        .setting-group select {
+            padding: 8px;
+            min-width: 140px;
+            font-size: 16px;
+        }
+        .category-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            margin-right: 5px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        .category-animals {
+            background-color: #4CAF50;
+        }
+        .category-food {
+            background-color: #FF9800;
+        }
+        .category-objects {
+            background-color: #2196F3;
+        }
+        .category-places {
+            background-color: #9C27B0;
+        }
+        .difficulty-easy {
+            background-color: #8BC34A;
+        }
+        .difficulty-medium {
+            background-color: #FFC107;
+        }
+        .difficulty-hard {
+            background-color: #F44336;
+        }
+        
+        /* Mobile specific styles */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 24px;
+                margin: 10px 0;
+            }
+            h2 {
+                font-size: 20px;
+            }
+            h3 {
+                font-size: 16px;
+            }
+            #canvas-container {
+                height: 250px;
+            }
+            .color-option {
+                width: 25px;
+                height: 25px;
+                margin: 0 3px;
+            }
+            #messages {
+                max-height: 120px;
+            }
+        }
+        
+        /* Additional mobile-specific styles */
+        .mobile-device #canvas-container {
+            height: 280px;
+            border: 3px solid #333;
+            margin: 10px auto;
+        }
+        
+        .mobile-device .drawer-controls {
+            padding: 8px 0;
+        }
+        
+        .mobile-device .color-option {
+            width: 36px;
+            height: 36px;
+            margin: 0 4px;
+        }
+        
+        .mobile-device #clear-btn {
+            font-size: 16px;
+            padding: 10px 15px;
+            margin-top: 8px;
+        }
+        
+        .mobile-device #word-display {
+            font-size: 22px;
+            background-color: #f9f9f9;
+            padding: 8px;
+            border-radius: 8px;
+            margin: 10px auto;
+            max-width: 90%;
+        }
+        
+        .mobile-device #round-info {
+            font-size: 16px;
+            background-color: #f0f0f0;
+            padding: 6px;
+            border-radius: 6px;
+            margin: 8px auto;
+            max-width: 90%;
+        }
+        
+        .mobile-device .timer {
+            font-size: 18px;
+        }
+        
+        /* Better touch feedback */
+        .mobile-device button:active {
+            background-color: #3e8e41;
+            transform: translateY(1px);
+        }
+        
+        .mobile-device .color-option:active {
+            transform: scale(1.2);
+        }
+        
+        /* Disable text selection on mobile */
+        .mobile-device {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Skribble Game</h1>
+    
+    <div id="username-section">
+        <p>Enter your username:</p>
+        <div class="join-form">
+            <input type="text" id="username" placeholder="Username" required>
+            <button id="set-username-btn">Set Username</button>
+        </div>
+    </div>
+    
+    <div id="lobby-section" class="hidden">
+        <h2>Welcome, <span id="player-name"></span>!</h2>
+        
+        <div class="join-form">
+            <input type="text" id="room-id" placeholder="Room ID">
+            <button id="create-room-btn">Create/Join Room</button>
+        </div>
+        
+        <h3>Available Rooms:</h3>
+        <div id="room-list" class="room-list"></div>
+    </div>
+    
+    <div id="game-section" class="hidden">
+        <h2>Room: <span id="room-name"></span></h2>
+        <button id="leave-room-btn">Leave Room</button>
+        
+        <div id="game-settings" class="settings-panel">
+            <h3>Game Settings</h3>
+            <div class="setting-group">
+                <label for="category-select">Category:</label>
+                <select id="category-select"></select>
+            </div>
+            <div class="setting-group">
+                <label for="difficulty-select">Difficulty:</label>
+                <select id="difficulty-select">
+                    <option value="easy">Easy</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+            <button id="update-settings-btn">Update Settings</button>
+        </div>
+        
+        <div id="word-display"></div>
+        <div id="round-info"></div>
+        <div id="timer" class="timer">Time left: <span id="time-left">60</span>s</div>
+        
+        <div id="canvas-container">
+            <canvas id="drawing-canvas"></canvas>
+        </div>
+        
+        <div id="drawer-controls" class="drawer-controls hidden">
+            <div class="color-picker">
+                <div class="color-option selected" style="background-color: #000000;" data-color="#000000"></div>
+                <div class="color-option" style="background-color: #ff0000;" data-color="#ff0000"></div>
+                <div class="color-option" style="background-color: #0000ff;" data-color="#0000ff"></div>
+                <div class="color-option" style="background-color: #00cc00;" data-color="#00cc00"></div>
+                <div class="color-option" style="background-color: #ffcc00;" data-color="#ffcc00"></div>
+                <div class="color-option" style="background-color: #ff00ff;" data-color="#ff00ff"></div>
+            </div>
+            <button id="clear-btn">Clear Canvas</button>
+        </div>
+        
+        <h3>Users in Room:</h3>
+        <div id="user-list"></div>
+        
+        <h3>Scores:</h3>
+        <div id="score-board"></div>
+        
+        <h3>Messages:</h3>
+        <div id="messages"></div>
+        
+        <div class="chat-input">
+            <input type="text" id="chat-input" placeholder="Type your guess here..." autocomplete="off">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // DOM elements
+        const usernameSection = document.getElementById('username-section');
+        const lobbySection = document.getElementById('lobby-section');
+        const gameSection = document.getElementById('game-section');
+        const playerNameElement = document.getElementById('player-name');
+        const roomNameElement = document.getElementById('room-name');
+        const usernameInput = document.getElementById('username');
+        const roomIdInput = document.getElementById('room-id');
+        const setUsernameBtn = document.getElementById('set-username-btn');
+        const createRoomBtn = document.getElementById('create-room-btn');
+        const leaveRoomBtn = document.getElementById('leave-room-btn');
+        const messages = document.getElementById('messages');
+        const userList = document.getElementById('user-list');
+        const roomList = document.getElementById('room-list');
+        const scoreBoard = document.getElementById('score-board');
+        const wordDisplay = document.getElementById('word-display');
+        const roundInfo = document.getElementById('round-info');
+        const drawerControls = document.getElementById('drawer-controls');
+        const timer = document.getElementById('timer');
+        const timeLeft = document.getElementById('time-left');
+        const categorySelect = document.getElementById('category-select');
+        const difficultySelect = document.getElementById('difficulty-select');
+        const updateSettingsBtn = document.getElementById('update-settings-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const canvas = document.getElementById('drawing-canvas');
+        const ctx = canvas.getContext('2d');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        
+        // Game state
+        let currentUsername = '';
+        let currentRoomId = '';
+        let isDrawer = false;
+        let isDrawing = false;
+        let currentColor = '#000000';
+        let prevX = 0;
+        let prevY = 0;
+        
+        // Initialize canvas
+        function setupCanvas() {
+            console.log('Setting up canvas...');
+            
+            try {
+                // Set canvas dimensions to match container
+                const canvasContainer = document.getElementById('canvas-container');
+                
+                if (!canvasContainer) {
+                    console.error('Canvas container not found');
+                    return;
+                }
+                
+                // Make sure the canvas container is visible
+                canvasContainer.style.display = 'block';
+                
+                // Set canvas size to match container
+                const containerWidth = canvasContainer.offsetWidth;
+                const containerHeight = canvasContainer.offsetHeight;
+                
+                if (containerWidth <= 0 || containerHeight <= 0) {
+                    console.warn('Canvas container has invalid dimensions:', 
+                                containerWidth, containerHeight);
+                    
+                    // Use default dimensions if container size is not available
+                    canvas.width = 300;
+                    canvas.height = 250;
+                } else {
+                    canvas.width = containerWidth;
+                    canvas.height = containerHeight;
+                }
+                
+                // Clear canvas with white background
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Set drawing properties
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = currentColor;
+                
+                // Make sure the canvas is visible
+                canvas.style.display = 'block';
+                
+                console.log(`Canvas successfully initialized with dimensions: ${canvas.width}x${canvas.height}`);
+            } catch (error) {
+                console.error('Error setting up canvas:', error);
+            }
+        }
+        
+        // Set up drawing event listeners
+        function setupDrawingEvents() {
+            console.log('Setting up drawing events...');
+            
+            try {
+                // Mouse events
+                canvas.addEventListener('mousedown', startDrawing);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', stopDrawing);
+                canvas.addEventListener('mouseout', stopDrawing);
+                
+                // Touch events for mobile
+                canvas.addEventListener('touchstart', handleTouchStart, {passive: false});
+                canvas.addEventListener('touchmove', handleTouchMove, {passive: false});
+                canvas.addEventListener('touchend', handleTouchEnd, {passive: false});
+                canvas.addEventListener('touchcancel', handleTouchEnd, {passive: false});
+                
+                // Clear button
+                clearBtn.addEventListener('click', clearCanvas);
+                
+                // Color picker
+                document.querySelectorAll('.color-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        // Remove selected class from all options
+                        document.querySelectorAll('.color-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        
+                        // Add selected class to clicked option
+                        this.classList.add('selected');
+                        
+                        // Set current color
+                        currentColor = this.getAttribute('data-color');
+                        ctx.strokeStyle = currentColor;
+                    });
+                });
+                
+                console.log('Drawing events setup completed');
+            } catch (error) {
+                console.error('Error setting up drawing events:', error);
+            }
+        }
+        
+        // Drawing functions
+        function startDrawing(e) {
+            console.log(`startDrawing called, isDrawer: ${isDrawer}`);
+            
+            if (!isDrawer) {
+                console.log('Not the drawer, cannot draw');
+                return;
+            }
+            
+            isDrawing = true;
+            const pos = getPosition(e);
+            prevX = pos.x;
+            prevY = pos.y;
+            
+            // Draw a dot at the starting position
+            ctx.beginPath();
+            ctx.arc(prevX, prevY, ctx.lineWidth / 2, 0, Math.PI * 2);
+            ctx.fillStyle = currentColor;
+            ctx.fill();
+            
+            console.log(`Started drawing at position: ${prevX}, ${prevY}`);
+        }
+        
+        function draw(e) {
+            if (!isDrawing || !isDrawer) return;
+            
+            const pos = getPosition(e);
+            const x = pos.x;
+            const y = pos.y;
+            
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(prevX, prevY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            
+            // Send drawing data to server
+            const drawingData = {
+                prevX: prevX / canvas.width,
+                prevY: prevY / canvas.height,
+                x: x / canvas.width,
+                y: y / canvas.height,
+                color: currentColor
+            };
+            
+            socket.emit('drawing', drawingData);
+            console.log(`Drawing from (${prevX}, ${prevY}) to (${x}, ${y}), color: ${currentColor}`);
+            
+            // Update previous position
+            prevX = x;
+            prevY = y;
+        }
+        
+        function stopDrawing() {
+            isDrawing = false;
+        }
+        
+        function clearCanvas() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Send clear canvas event to server
+            socket.emit('clearCanvas');
+        }
+        
+        // Handle touch events
+        function handleTouchStart(e) {
+            e.preventDefault();
+            console.log('Touch start event detected');
+            
+            if (e.touches && e.touches.length > 0) {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                
+                prevX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                prevY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+                
+                isDrawing = isDrawer; // Only allow drawing if this user is the drawer
+                
+                if (isDrawing) {
+                    console.log(`Started drawing at ${prevX}, ${prevY}`);
+                    
+                    // Draw a dot at the starting position
+                    ctx.beginPath();
+                    ctx.arc(prevX, prevY, ctx.lineWidth / 2, 0, Math.PI * 2);
+                    ctx.fillStyle = currentColor;
+                    ctx.fill();
+                    
+                    // Send drawing data to server
+                    if (isDrawer) {
+                        socket.emit('drawing', {
+                            prevX: prevX / canvas.width,
+                            prevY: prevY / canvas.height,
+                            x: prevX / canvas.width,
+                            y: prevY / canvas.height,
+                            color: currentColor,
+                            isDot: true
+                        });
+                    }
+                }
+            }
+        }
+        
+        function handleTouchMove(e) {
+            e.preventDefault();
+            
+            if (!isDrawing || !isDrawer) return;
+            
+            if (e.touches && e.touches.length > 0) {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                
+                const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+                
+                // Draw line
+                ctx.beginPath();
+                ctx.moveTo(prevX, prevY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                
+                // Send drawing data to server
+                socket.emit('drawing', {
+                    prevX: prevX / canvas.width,
+                    prevY: prevY / canvas.height,
+                    x: x / canvas.width,
+                    y: y / canvas.height,
+                    color: currentColor
+                });
+                
+                console.log(`Drawing from (${prevX}, ${prevY}) to (${x}, ${y}), color: ${currentColor}`);
+                
+                // Update previous position
+                prevX = x;
+                prevY = y;
+            }
+        }
+        
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            console.log('Touch end event detected');
+            isDrawing = false;
+        }
+
+        // Get mouse/touch position relative to canvas with proper scaling
+        function getPosition(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+        
+        // Connect to Socket.IO server
+        const socket = io();
+
+        // Handle orientation change or resize for mobile devices
+        window.addEventListener('orientationchange', () => {
+            console.log('Orientation changed');
+            // Wait a moment for the browser to adjust
+            setTimeout(resizeCanvas, 300);
+        });
+        
+        // Function to resize canvas
+        function resizeCanvas() {
+            if (canvas && ctx) {
+                console.log('Resizing canvas...');
+                
+                try {
+                    // Store current drawing before resize
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // Get the canvas container
+                    const canvasContainer = document.getElementById('canvas-container');
+                    if (!canvasContainer) return;
+                    
+                    // Get the new dimensions
+                    const containerWidth = canvasContainer.offsetWidth;
+                    const containerHeight = canvasContainer.offsetHeight;
+                    
+                    // Set canvas size
+                    canvas.width = containerWidth;
+                    canvas.height = containerHeight;
+                    
+                    // Restore drawing properties
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.strokeStyle = currentColor;
+                    
+                    // Try to restore the previous drawing if possible
+                    try {
+                        ctx.putImageData(imageData, 0, 0);
+                    } catch (e) {
+                        // If we can't restore (e.g., canvas size changed), fill with white
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                    
+                    console.log(`Canvas resized to: ${canvas.width}x${canvas.height}`);
+                } catch (error) {
+                    console.error('Error resizing canvas:', error);
+                }
+            }
+        }
+        
+        // Initialize canvas when the page loads
+        window.addEventListener('load', () => {
+            console.log('Page loaded, setting up canvas');
+            
+            // Make sure the canvas element exists before trying to set it up
+            if (canvas && ctx) {
+                setupCanvas();
+                setupDrawingEvents();
+                
+                // Log canvas state to help debugging
+                console.log(`Canvas initialized with dimensions: ${canvas.width}x${canvas.height}`);
+                console.log(`Is drawer: ${isDrawer}`);
+                
+                // Add class to body when on mobile
+                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    document.body.classList.add('mobile-device');
+                    console.log('Mobile device detected');
+                }
+            } else {
+                console.error('Canvas or context not available');
+            }
+        });
+        
+        // Chat message handling
+        function sendChatMessage() {
+            const message = chatInput.value.trim();
+            if (message) {
+                // Send chat message to server
+                socket.emit('chatMessage', {
+                    message,
+                    roomId: currentRoomId
+                });
+                
+                // Clear input
+                chatInput.value = '';
+            }
+        }
+        
+        // Send chat message on button click
+        sendBtn.addEventListener('click', sendChatMessage);
+        
+        // Send chat message on Enter key
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+        
+        // Update room settings button click handler
+        updateSettingsBtn.addEventListener('click', () => {
+            const category = categorySelect.value;
+            const difficulty = difficultySelect.value;
+            
+            // Emit update room settings event
+            socket.emit('updateRoomSettings', {
+                category,
+                difficulty
+            });
+            
+            addMessage(`You updated the room settings: Category: ${category}, Difficulty: ${difficulty}`);
+        });
+
+        // Set username button click handler
+        setUsernameBtn.addEventListener('click', () => {
+            const username = usernameInput.value.trim();
+            if (username) {
+                // Save username
+                currentUsername = username;
+                
+                // Emit joinGame event with username
+                socket.emit('joinGame', username);
+                
+                // Update UI
+                usernameSection.classList.add('hidden');
+                lobbySection.classList.remove('hidden');
+                playerNameElement.textContent = username;
+                
+                // Add message
+                addMessage(`You joined as ${username}`);
+            }
+        });
+        
+        // Create/Join room button click handler
+        createRoomBtn.addEventListener('click', () => {
+            const roomId = roomIdInput.value.trim() || `room-${Math.floor(Math.random() * 10000)}`;
+            
+            // Save room ID
+            currentRoomId = roomId;
+            
+            // Emit joinRoom event
+            socket.emit('joinRoom', {
+                roomId: roomId,
+                username: currentUsername
+            });
+        });
+        
+        // Leave room button click handler
+        leaveRoomBtn.addEventListener('click', () => {
+            // Leave the current room (Socket.IO handles this automatically on disconnect)
+            // but we'll handle the UI changes
+            gameSection.classList.add('hidden');
+            lobbySection.classList.remove('hidden');
+            currentRoomId = '';
+            userList.innerHTML = '';
+            messages.innerHTML = '';
+            timeLeft.textContent = '60';
+            timer.classList.remove('timer-warning');
+            isDrawer = false;
+            drawerControls.classList.add('hidden');
+        });
+        
+        // Function to join a room from the room list
+        function joinRoom(roomId) {
+            // Save room ID
+            currentRoomId = roomId;
+            
+            // Emit joinRoom event
+            socket.emit('joinRoom', {
+                roomId: roomId,
+                username: currentUsername
+            });
+        }
+
+        // Function to add message to the messages div
+        function addMessage(text) {
+            const message = document.createElement('p');
+            message.textContent = text;
+            messages.appendChild(message);
+            
+            // Scroll to bottom
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        // Function to update the user list
+        function updateUserList(users) {
+            userList.innerHTML = '';
+            users.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.textContent = user.username;
+                userElement.id = `user-${user.id}`;
+                userList.appendChild(userElement);
+            });
+            
+            // Also update the score board if scores are available
+            updateScoreBoard(users);
+        }
+        
+        // Function to update the score board
+        function updateScoreBoard(users) {
+            scoreBoard.innerHTML = '';
+            
+            // Sort users by score (highest first)
+            const sortedUsers = [...users].sort((a, b) => (b.score || 0) - (a.score || 0));
+            
+            sortedUsers.forEach(user => {
+                const scoreItem = document.createElement('div');
+                scoreItem.className = 'score-item';
+                scoreItem.id = `score-${user.id}`;
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = user.username;
+                
+                const scoreSpan = document.createElement('span');
+                scoreSpan.textContent = user.score || 0;
+                scoreSpan.className = 'user-score';
+                
+                scoreItem.appendChild(nameSpan);
+                scoreItem.appendChild(scoreSpan);
+                scoreBoard.appendChild(scoreItem);
+            });
+        }
+        
+        // Function to update the room list
+        function updateRoomList(rooms) {
+            roomList.innerHTML = '';
+            if (rooms.length === 0) {
+                const emptyMessage = document.createElement('p');
+                emptyMessage.textContent = 'No rooms available. Create one!';
+                roomList.appendChild(emptyMessage);
+                return;
+            }
+            
+            rooms.forEach(room => {
+                const roomElement = document.createElement('div');
+                roomElement.className = 'room-item';
+                
+                const roomInfo = document.createElement('span');
+                roomInfo.textContent = `Room: ${room.id} (${room.userCount} users)`;
+                
+                const joinButton = document.createElement('button');
+                joinButton.textContent = 'Join';
+                joinButton.addEventListener('click', () => joinRoom(room.id));
+                
+                roomElement.appendChild(roomInfo);
+                roomElement.appendChild(joinButton);
+                roomList.appendChild(roomElement);
+            });
+        }
+        
+        // Function to handle start round event
+        function handleStartRound(data) {
+            console.log('Handling start round event, data:', data);
+            
+            // Create category and difficulty badges
+            const categoryBadge = `<span class="category-badge category-${data.category}">${data.category}</span>`;
+            const difficultyBadge = `<span class="category-badge difficulty-${data.difficulty}">${data.difficulty}</span>`;
+            
+            if (data.isDrawer) {
+                // This user is the drawer
+                isDrawer = true;
+                console.log('I am now the drawer');
+                
+                drawerControls.classList.remove('hidden');
+                wordDisplay.innerHTML = `Your word to draw: ${data.word} ${categoryBadge} ${difficultyBadge}`;
+                roundInfo.textContent = 'You are drawing! Others are guessing.';
+                
+                // Reset the canvas for the drawer
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // If this is a new drawer (previous drawer left)
+                if (data.isNewDrawer) {
+                    addMessage('You are now the drawer! Previous drawer left.');
+                }
+            } else {
+                // This user is a guesser
+                isDrawer = false;
+                console.log('I am a guesser');
+                
+                drawerControls.classList.add('hidden');
+                wordDisplay.innerHTML = `Word hint: ${data.hint} ${categoryBadge} ${difficultyBadge}`;
+                roundInfo.textContent = `${data.drawerUsername} is drawing now. Guess the word!`;
+                
+                // Reset the canvas for the guesser
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            // Add message about category and difficulty
+            addMessage(`New round started with category: ${data.category}, difficulty: ${data.difficulty}`);
+        }
+
+        // Listen for welcome message
+        socket.on('welcome', (data) => {
+            addMessage(`Server: ${data.message}`);
+            console.log('Received welcome message:', data);
+        });
+
+        // Listen for room joined event
+        socket.on('roomJoined', (data) => {
+            console.log('Room joined:', data);
+            
+            // Update UI
+            lobbySection.classList.add('hidden');
+            gameSection.classList.remove('hidden');
+            roomNameElement.textContent = data.roomId;
+            
+            // Update user list
+            updateUserList(data.users);
+            
+            // Populate category select
+            categorySelect.innerHTML = '';
+            data.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                categorySelect.appendChild(option);
+            });
+            
+            // Set current category and difficulty
+            categorySelect.value = data.category;
+            difficultySelect.value = data.difficulty;
+            
+            // Add message
+            addMessage(`You joined room ${data.roomId}`);
+            addMessage(`Current settings: Category: ${data.category}, Difficulty: ${data.difficulty}`);
+        });
+        
+        // Listen for start round event
+        socket.on('startRound', (data) => {
+            console.log('Round started:', data);
+            handleStartRound(data);
+            addMessage('New round started!');
+        });
+        
+        // Listen for new drawer event
+        socket.on('newDrawer', (data) => {
+            console.log('New drawer:', data);
+            if (!isDrawer) {
+                roundInfo.textContent = `${data.username} is drawing now. Guess the word!`;
+            }
+            addMessage(`${data.username} is now drawing (previous drawer left).`);
+        });
+        
+        // Listen for drawing events
+        socket.on('drawing', (data) => {
+            console.log('Received drawing event:', data);
+            
+            if (isDrawer) {
+                console.log('As drawer, ignoring received drawing event');
+                return; // Drawer doesn't need to receive their own drawings
+            }
+            
+            try {
+                // Convert normalized coordinates back to canvas coordinates
+                const prevX = data.prevX * canvas.width;
+                const prevY = data.prevY * canvas.height;
+                const x = data.x * canvas.width;
+                const y = data.y * canvas.height;
+                
+                // Save current drawing settings
+                const currentStrokeStyle = ctx.strokeStyle;
+                
+                // Draw the line or dot
+                ctx.strokeStyle = data.color;
+                
+                if (data.isDot) {
+                    // Draw a dot
+                    ctx.beginPath();
+                    ctx.arc(x, y, ctx.lineWidth / 2, 0, Math.PI * 2);
+                    ctx.fillStyle = data.color;
+                    ctx.fill();
+                } else {
+                    // Draw a line
+                    ctx.beginPath();
+                    ctx.moveTo(prevX, prevY);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                }
+                
+                // Restore original drawing settings
+                ctx.strokeStyle = currentStrokeStyle;
+                
+                console.log(`Drew line from (${prevX}, ${prevY}) to (${x}, ${y}) with color ${data.color}`);
+            } catch (error) {
+                console.error('Error drawing received data:', error);
+            }
+        });
+        
+        // Listen for clear canvas event
+        socket.on('clearCanvas', () => {
+            if (isDrawer) return; // Drawer doesn't need to receive their own clear
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        });
+        
+        // Listen for user joined room event
+        socket.on('userJoinedRoom', (data) => {
+            console.log('User joined room:', data);
+            
+            // Add user to the list
+            const userElement = document.createElement('div');
+            userElement.textContent = data.user.username;
+            userElement.id = `user-${data.user.id}`;
+            userList.appendChild(userElement);
+            
+            // Add message
+            addMessage(`${data.user.username} joined the room`);
+        });
+        
+        // Listen for user left room event
+        socket.on('userLeftRoom', (data) => {
+            console.log('User left room:', data);
+            
+            // Remove the user from the list
+            const userElement = document.getElementById(`user-${data.id}`);
+            if (userElement) {
+                userElement.remove();
+            }
+            
+            // Add message
+            addMessage(`${data.username} left the room`);
+        });
+
+        // Listen for room list update
+        socket.on('roomList', (rooms) => {
+            console.log('Room list:', rooms);
+            updateRoomList(rooms);
+        });
+
+        // Listen for user list
+        socket.on('userList', (users) => {
+            console.log('User list:', users);
+        });
+
+        // Listen for user joined event
+        socket.on('userJoined', (user) => {
+            addMessage(`${user.username} joined the game`);
+        });
+        
+        // Listen for chat messages
+        socket.on('chatMessage', (data) => {
+            const messageText = `${data.username}: ${data.message}`;
+            addMessage(messageText);
+        });
+        
+        // Listen for correct guess
+        socket.on('correctGuess', (data) => {
+            const messageElement = document.createElement('p');
+            messageElement.classList.add('correct-guess');
+            messageElement.textContent = `${data.username} guessed the word correctly: ${data.word}!`;
+            messages.appendChild(messageElement);
+            messages.scrollTop = messages.scrollHeight;
+            
+            // If this user was the one who guessed correctly
+            if (data.userId === socket.id) {
+                wordDisplay.textContent = `You guessed it: ${data.word}!`;
+            }
+            
+            // Update round info
+            roundInfo.textContent = `${data.username} guessed the word correctly!`;
+            
+            // Update scores if available
+            if (data.scores) {
+                updateScoreBoard(data.scores);
+            }
+        });
+        
+        // Listen for round end
+        socket.on('roundEnd', (data) => {
+            // Reset drawing state
+            if (isDrawer) {
+                isDrawer = false;
+                drawerControls.classList.add('hidden');
+            }
+            
+            // Clear the canvas
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Show round end message
+            if (data.timeUp) {
+                addMessage(`Time's up! The word was: ${data.word}`);
+            } else {
+                addMessage(`Round ended. The word was: ${data.word}`);
+            }
+            
+            // Reset word display
+            wordDisplay.textContent = '';
+            roundInfo.textContent = 'Waiting for next round to start...';
+            
+            // Reset timer display
+            timeLeft.textContent = '60';
+            timer.classList.remove('timer-warning');
+            
+            // Update scores if available
+            if (data.scores) {
+                updateScoreBoard(data.scores);
+            }
+        });
+        
+        // Listen for time updates
+        socket.on('timeUpdate', (data) => {
+            timeLeft.textContent = data.timeLeft;
+            
+            // Add warning class when time is running low (less than 10 seconds)
+            if (data.timeLeft <= 10) {
+                timer.classList.add('timer-warning');
+            } else {
+                timer.classList.remove('timer-warning');
+            }
+        });
+        
+        // Listen for room settings updates
+        socket.on('roomSettingsUpdated', (data) => {
+            // Update UI
+            categorySelect.value = data.category;
+            difficultySelect.value = data.difficulty;
+            
+            // Add message
+            addMessage(`Room settings updated: Category: ${data.category}, Difficulty: ${data.difficulty}`);
+        });
+
+        // Listen for user left event
+        socket.on('userLeft', (user) => {
+            addMessage(`${user.username} left the game`);
+        });
+
+        // Log when connection is established
+        socket.on('connect', () => {
+            addMessage('Connected to server!');
+            console.log('Connected to server');
+        });
+
+        // Log when disconnected
+        socket.on('disconnect', () => {
+            addMessage('Disconnected from server');
+            console.log('Disconnected from server');
+        });
+    </script>
+</body>
+</html>
